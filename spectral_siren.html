@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>spectral siren fit</title>
+<style>
+    .full {
+        width: 100vw;
+        height: 100vh;
+    }
+    #main {
+        width: 100%;
+        height: 100%;
+    }
+    button {
+        width: 100px;
+        height: 50px;
+        font-size: 20px;
+    }
+    p {
+        font-size: 20px;
+    }
+</style>
+</head>
+<body>
+    <div class="full">
+        <div id="main" style="width: 80%;height: 80%;"></div>
+        <script src="echarts.js"></script>
+        <script src="spectral_siren.js"></script>
+        
+        <button type="button" onclick="getRandomData(displayRandomData)">load unknown data</button>
+        <button type="button" onclick="getBasicData(displayBasicData)">load basic data</button>
+        <button type="button" onclick="recordClickPosition(generateGaussian)">generate new peak</button>
+        <button type="button" onclick="select_line(test)">select a line</button>
+        <button type="button" onclick="refresh()">start a new process</button>
+        <p></p>
+    </div>
+
+</body>
+</html>
