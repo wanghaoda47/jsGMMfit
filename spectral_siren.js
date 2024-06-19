@@ -382,7 +382,6 @@ function generateGaussian(point){
   }
   var gauss_number = gaussians.series.length
   gaussians.add_element(point[0], 3, point[1])
-  console.log(gaussians)
   displayGaussian(gaussians, gauss_number)
   mychart.getZr().off('click');
 }
@@ -422,9 +421,9 @@ function displayGaussian(gaussian_series, number){
   var gauss_option = new Array()
   if (number != 0){
     var option_length = option.series.length
-    option.series.splice(option_length-number-1, number+1)
+    option.series.splice(option_length-number-1, number+2)
   }
-
+  console.log(option.series)
   for (var i=0; i<gaussian_series.series.length; i++){
     gauss_option.push({
       data: xy[i],
@@ -450,7 +449,10 @@ function displayGaussian(gaussian_series, number){
     }
   })
   option.series.push(...gauss_option)
+  console.log(option.series)
+  mychart.clear()
   mychart.setOption(option);
+  console.log(mychart.getOption().series)
 }
 
 function select_line(callback){
@@ -459,10 +461,9 @@ function select_line(callback){
   mychart.getZr().on('click', function(params) {
     callback(params)
   });
-  mychart.off('click');
 }
 
-function test(params){
+function delete_line(params){
   if (determinator != 2){
     return
   }
@@ -477,9 +478,317 @@ function test(params){
   if (effect_keys[1] < effect_keys[0]){
     effect_key = effect_keys[1]
   }
-  console.log(params.target[effect_key].seriesIndex)
+  var index = params.target[effect_key].seriesIndex
+  console.log(index)
+  var mychart = echarts.getInstanceByDom(document.getElementById('main'));
+  var option = mychart.getOption();
+  var series_length = option.series.length
+  if (index > series_length-1){
+    alert('error!')
+  }
+  if (index == series_length-1 || index == 0 || index == 1){
+    alert('You cannot delete this')
+    return
+  }
+  var gauss_number = gaussians.series.length
+  console.log(option.series)
+  console.log(gaussians.series.length)
+  gaussians.delete_element(index-2)
+  displayGaussian(gaussians, gauss_number)
+  console.log(gaussians.series.length)
+  mychart.getZr().off('click');
 }
 
+function select_middle(callback){
+  determinator = 3
+  var mychart = echarts.getInstanceByDom(document.getElementById('main'));
+  mychart.getZr().on('click', function(params) {
+    callback(params)
+  });
+}
+
+function change_middle(params){
+  if (determinator != 3){
+    return
+  }
+  var symbolSize = 8;
+  var keys = Object.keys(params.target)
+  var effect_keys = new Array()
+  for (let k in keys){
+    if (keys[k].includes('__ec_inner_')) { 
+      effect_keys.push(keys[k])
+    }
+  }
+  var effect_key = effect_keys[0]
+  if (effect_keys[1] < effect_keys[0]){
+    effect_key = effect_keys[1]
+  }
+  var index = params.target[effect_key].seriesIndex
+  console.log(index)
+  var mychart = echarts.getInstanceByDom(document.getElementById('main'));
+  var option = mychart.getOption();
+  var series_length = option.series.length
+  if (index > series_length-1){
+    alert('error!')
+  }
+  if (index == series_length-1 || index == 0 || index == 1){
+    alert('You cannot change this')
+    return
+  }
+  index=index-2;
+  var data = new Array()
+  data.push([gaussians.series[index].mean, gaussians.series[index].a])
+  //mychart.on('datazoom',updatePosition);
+  //window.addEventListener('resize', updatePosition);
+  setTimeout(function () {
+    // Add shadow circles (which is not visible) to enable drag.
+    mychart.setOption({
+      graphic: data.map(function (item, dataIndex) {
+        return {
+          id: 'point'+dataIndex,
+          type: 'circle',
+          position: mychart.convertToPixel('grid', item),
+          shape: {
+            cx: 0,
+            cy: 0,
+            r: symbolSize / 2
+          },
+          invisible: false,
+          draggable: true,
+          ondrag: function (dx, dy) {
+            onPointDragging(dataIndex, [this.x, this.y]);
+          },
+          onmousemove: function () {
+            showTooltip(dataIndex);
+          },
+          onmouseout: function () {
+            hideTooltip(dataIndex);
+          },
+          z: 100
+        };
+      })
+    });
+  }, 100);
+  function updatePosition() {
+    mychart.setOption({
+      graphic: data.map(function (item, dataIndex) {
+        return {
+          position: mychart.convertToPixel('grid', item)
+        };
+      })
+    });
+  }
+  function onPointDragging(dataIndex, pos){
+    data[dataIndex] = mychart.convertFromPixel('grid', pos);
+    gaussians.change_mean(index, data[dataIndex][0])
+    gaussians.change_A(index, data[dataIndex][1])
+    var x = new Array()
+    var y = new Array()
+    var y0 = new Array()
+    var xy=new Array()
+    var xy0=new Array()
+    var step = (limit.max-limit.min)/200
+    for (var i=0; i<=(limit.max-limit.min); i+=step){
+      x.push(limit.min+i)
+    }
+    for (var i=0; i<x.length; i++){
+      y.push(gaussians.series[index].pdf(x[i]))
+    }
+    for (var i=0;i<x.length;i++){
+      xy.push([x[i],y[i]])
+    }
+    for (var i=0; i<x.length; i++){
+      y0.push(gaussians.pdf(x[i]))
+    }
+    for (var i=0; i<x.length; i++){
+      xy0.push([x[i],y0[i]])
+    }
+    mychart.setOption({
+      graphic: data.map(function (item, dataIndex) {
+        return {
+          position: mychart.convertToPixel('grid', item)
+        };
+      })
+    });
+    var gauss_number = gaussians.series.length
+    option= mychart.getOption()
+    option.series[index+2].data = xy
+    option.series[option.series.length-1].data = xy0
+    mychart.setOption(option)
+  }
+  function showTooltip(dataIndex) {
+    mychart.dispatchAction({
+      type: 'showTip',
+      seriesIndex: 0,
+      dataIndex: dataIndex
+    });
+  }
+  function hideTooltip(dataIndex) {
+    mychart.dispatchAction({
+      type: 'hideTip'
+    });
+  }
+  console.log(mychart.getOption().graphic)
+}
+
+function select_width(callback){
+  determinator = 4
+  var mychart = echarts.getInstanceByDom(document.getElementById('main'));
+  mychart.getZr().on('click', function(params) {
+    callback(params)
+  });
+}
+
+function change_width(params){
+  if (determinator != 4){
+    return
+  }
+  var symbolSize = 8;
+  var keys = Object.keys(params.target)
+  var effect_keys = new Array()
+  for (let k in keys){
+    if (keys[k].includes('__ec_inner_')) { 
+      effect_keys.push(keys[k])
+    }
+  }
+  var effect_key = effect_keys[0]
+  if (effect_keys[1] < effect_keys[0]){
+    effect_key = effect_keys[1]
+  }
+  var index = params.target[effect_key].seriesIndex
+  console.log(index)
+  var mychart = echarts.getInstanceByDom(document.getElementById('main'));
+  var option = mychart.getOption();
+  var series_length = option.series.length
+  if (index > series_length-1){
+    alert('error!')
+  }
+  if (index == series_length-1 || index == 0 || index == 1){
+    alert('You cannot change this')
+    return
+  }
+  index=index-2;
+  var data = new Array()
+  data.push([gaussians.series[index].mean+gaussians.series[index].variance, 
+    gaussians.series[index].pdf(gaussians.series[index].mean+gaussians.series[index].variance)])
+  data.push([gaussians.series[index].mean-gaussians.series[index].variance, 
+    gaussians.series[index].pdf(gaussians.series[index].mean-gaussians.series[index].variance)])
+  //mychart.on('datazoom',updatePosition);
+  //window.addEventListener('resize', updatePosition);
+  setTimeout(function () {
+    // Add shadow circles (which is not visible) to enable drag.
+    mychart.setOption({
+      graphic: data.map(function (item, dataIndex) {
+        return {
+          id: 'point'+dataIndex,
+          type: 'circle',
+          position: mychart.convertToPixel('grid', item),
+          shape: {
+            cx: 0,
+            cy: 0,
+            r: symbolSize / 2
+          },
+          invisible: false,
+          draggable: true,
+          ondrag: function (dx, dy) {
+            onPointDragging(dataIndex, [this.x, this.y]);
+          },
+          onmousemove: function () {
+            showTooltip(dataIndex);
+          },
+          onmouseout: function () {
+            hideTooltip(dataIndex);
+          },
+          z: 100
+        };
+      })
+    });
+  }, 100);
+  function updatePosition() {
+    mychart.setOption({
+      graphic: data.map(function (item, dataIndex) {
+        return {
+          position: mychart.convertToPixel('grid', item)
+        };
+      })
+    });
+  }
+  function onPointDragging(dataIndex, pos){
+    data[dataIndex] = mychart.convertFromPixel('grid', pos);
+    if (dataIndex == 0){
+      gaussians.change_variance(index, data[dataIndex][0]-gaussians.series[index].mean)
+    }
+    else{
+      gaussians.change_variance(index, gaussians.series[index].mean-data[dataIndex][0])
+    }
+    data[0]=([gaussians.series[index].mean+gaussians.series[index].variance, 
+      gaussians.series[index].pdf(gaussians.series[index].mean+gaussians.series[index].variance)])
+    data[1]=([gaussians.series[index].mean-gaussians.series[index].variance, 
+      gaussians.series[index].pdf(gaussians.series[index].mean-gaussians.series[index].variance)])
+    var x = new Array()
+    var y = new Array()
+    var y0 = new Array()
+    var xy=new Array()
+    var xy0=new Array()
+    var step = (limit.max-limit.min)/200
+    for (var i=0; i<=(limit.max-limit.min); i+=step){
+      x.push(limit.min+i)
+    }
+    for (var i=0; i<x.length; i++){
+      y.push(gaussians.series[index].pdf(x[i]))
+    }
+    for (var i=0;i<x.length;i++){
+      xy.push([x[i],y[i]])
+    }
+    for (var i=0; i<x.length; i++){
+      y0.push(gaussians.pdf(x[i]))
+    }
+    for (var i=0; i<x.length; i++){
+      xy0.push([x[i],y0[i]])
+    }
+    mychart.setOption({
+      graphic: data.map(function (item, dataIndex) {
+        return {
+          position: mychart.convertToPixel('grid', item)
+        };
+      })
+    });
+    var gauss_number = gaussians.series.length
+    option= mychart.getOption()
+    option.series[index+2].data = xy
+    option.series[option.series.length-1].data = xy0
+    mychart.setOption(option)
+  }
+  function showTooltip(dataIndex) {
+    mychart.dispatchAction({
+      type: 'showTip',
+      seriesIndex: 0,
+      dataIndex: dataIndex
+    });
+  }
+  function hideTooltip(dataIndex) {
+    mychart.dispatchAction({
+      type: 'hideTip'
+    });
+  }
+  console.log(mychart.getOption().graphic)
+}
+
+
+
 function refresh(){
+  determinator = 0
+  var mychart = echarts.getInstanceByDom(document.getElementById('main'));
+  for (var dataIndex=0; dataIndex<2; dataIndex ++){
+    mychart.setOption({
+      graphic: {
+        id: 'point'+dataIndex,
+        $action: 'remove'
+      }
+    })
+  }
+  mychart.setOption({
+    graphic: null
+  });
   determinator = 0
 }
