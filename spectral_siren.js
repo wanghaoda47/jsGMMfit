@@ -503,28 +503,28 @@ function select_middle(callback){
   determinator = 3
   var mychart = echarts.getInstanceByDom(document.getElementById('main'));
   mychart.getZr().on('click', function(params) {
-    callback(params)
+    var keys = Object.keys(params.target)
+    var effect_keys = new Array()
+    for (let k in keys){
+      if (keys[k].includes('__ec_inner_')) { 
+        effect_keys.push(keys[k])
+      }
+    }
+    var effect_key = effect_keys[0]
+    if (effect_keys[1] < effect_keys[0]){
+      effect_key = effect_keys[1]
+    }
+    var index = params.target[effect_key].seriesIndex
+
+    callback(index)
   });
 }
 
-function change_middle(params){
+function change_middle(index){
   if (determinator != 3){
     return
   }
   var symbolSize = 8;
-  var keys = Object.keys(params.target)
-  var effect_keys = new Array()
-  for (let k in keys){
-    if (keys[k].includes('__ec_inner_')) { 
-      effect_keys.push(keys[k])
-    }
-  }
-  var effect_key = effect_keys[0]
-  if (effect_keys[1] < effect_keys[0]){
-    effect_key = effect_keys[1]
-  }
-  var index = params.target[effect_key].seriesIndex
-  console.log(index)
   var mychart = echarts.getInstanceByDom(document.getElementById('main'));
   var option = mychart.getOption();
   var series_length = option.series.length
@@ -635,28 +635,27 @@ function select_width(callback){
   determinator = 4
   var mychart = echarts.getInstanceByDom(document.getElementById('main'));
   mychart.getZr().on('click', function(params) {
-    callback(params)
+    var keys = Object.keys(params.target)
+    var effect_keys = new Array()
+    for (let k in keys){
+      if (keys[k].includes('__ec_inner_')) { 
+        effect_keys.push(keys[k])
+      }
+    }
+    var effect_key = effect_keys[0]
+    if (effect_keys[1] < effect_keys[0]){
+      effect_key = effect_keys[1]
+    }
+    var index = params.target[effect_key].seriesIndex
+    callback(index)
   });
 }
 
-function change_width(params){
+function change_width(index){
   if (determinator != 4){
     return
   }
   var symbolSize = 8;
-  var keys = Object.keys(params.target)
-  var effect_keys = new Array()
-  for (let k in keys){
-    if (keys[k].includes('__ec_inner_')) { 
-      effect_keys.push(keys[k])
-    }
-  }
-  var effect_key = effect_keys[0]
-  if (effect_keys[1] < effect_keys[0]){
-    effect_key = effect_keys[1]
-  }
-  var index = params.target[effect_key].seriesIndex
-  console.log(index)
   var mychart = echarts.getInstanceByDom(document.getElementById('main'));
   var option = mychart.getOption();
   var series_length = option.series.length
